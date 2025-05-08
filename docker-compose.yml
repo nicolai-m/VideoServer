@@ -1,0 +1,29 @@
+services:
+  php-fpm:
+    build: ./php-fpm
+    container_name: php-fpm-video-srv
+    environment:
+      PHP_IDE_CONFIG: serverName=tradeelevate
+      XDEBUG_MODE: debug
+      XDEBUG_SESSION: 1
+    volumes:
+      - ./html:/var/www/vhosts/web
+      - recordings:/tmp/recordings
+    expose:
+      - "9000"
+      - "9003"
+
+  nginx:
+    build: ./nginx
+    container_name: nginx-video-srv
+    ports:
+      - "80:80"
+      - "1935:1935"
+    volumes:
+      - recordings:/tmp/recordings
+      - ./html/:/usr/share/nginx/html
+    depends_on:
+      - php-fpm
+
+volumes:
+  recordings:
