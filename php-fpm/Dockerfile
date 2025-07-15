@@ -9,7 +9,7 @@ RUN chmod +x /usr/local/bin/install-php-extensions && \
     docker-php-ext-install dom && \
     install-php-extensions xdebug ssh2 mysqli gd mongodb zip pcntl imagick bz2 xml pdo pdo_mysql
 
-RUN apk add dos2unix --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/community/ --allow-untruste
+RUN apk add dos2unix --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/community/ --allow-untrusted
 
 WORKDIR /var/www/vhosts/web
 
