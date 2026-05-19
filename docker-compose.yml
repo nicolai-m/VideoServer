@@ -17,7 +17,7 @@ services:
     build: ./nginx
     container_name: nginx-video-srv
     ports:
-      - "80:80"
+      - "8080:80"
       - "1935:1935"
     volumes:
       - recordings:/tmp/recordings
