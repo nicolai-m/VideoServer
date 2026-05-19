@@ -1,3 +1,30 @@
+<?php
+$dir = "/tmp/recordings";
+$message = null;
+$messageType = "success";
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["action"] ?? "") === "delete") {
+    $filename = basename($_POST["filename"] ?? "");
+    $filePath = $dir . "/" . $filename;
+
+    if ($filename === "" || !str_ends_with($filename, ".mp4")) {
+        $message = "Ungültiger Dateiname.";
+        $messageType = "danger";
+    } elseif (!is_file($filePath)) {
+        $message = "Die Datei wurde nicht gefunden.";
+        $messageType = "warning";
+    } elseif (unlink($filePath)) {
+        $sourceFile = str_ends_with($filename, ".flv.mp4") ? $dir . "/" . substr($filename, 0, -4) : null;
+        if ($sourceFile && is_file($sourceFile)) {
+            unlink($sourceFile);
+        }
+        $message = "Die Datei wurde gelöscht: " . $filename;
+    } else {
+        $message = "Die Datei konnte nicht gelöscht werden.";
+        $messageType = "danger";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -19,22 +46,38 @@
 <body>
 <div class="container py-4">
     <h1 class="text-center mb-4">Gespeicherte Videos</h1>
+    <?php if ($message): ?>
+        <div class="alert alert-<?= htmlspecialchars($messageType) ?>" role="alert">
+            <?= htmlspecialchars($message) ?>
+        </div>
+    <?php endif; ?>
+
     <div id="video-grid" class="row g-3">
         <?php
-        $dir = "/tmp/recordings";
         $videos = array_values(array_filter(glob("$dir/*.mp4"), 'is_file'));
         foreach ($videos as $index => $file) {
             $filename = basename($file);
+            $videoUrl = "/videos/" . rawurlencode($filename);
             ?>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 video-item" data-index="<?= $index ?>" style="<?= $index >= 16 ? 'display: none;' : '' ?>">
                 <div class="card h-100">
                     <div class="card-body p-2">
-                        <video class="img-fluid video-thumbnail" data-bs-toggle="modal" data-bs-target="#videoModal" data-video="/videos/<?= urlencode($filename) ?>" muted>
-                            <source src="/videos/<?= urlencode($filename) ?>" type="video/mp4">
+                        <video class="img-fluid video-thumbnail" data-bs-toggle="modal" data-bs-target="#videoModal" data-video="<?= htmlspecialchars($videoUrl) ?>" muted>
+                            <source src="<?= htmlspecialchars($videoUrl) ?>" type="video/mp4">
                             Dein Browser unterstützt kein Video.
                         </video>
                     </div>
-                    <div class="card-footer text-center small"><?= htmlspecialchars($filename) ?></div>
+                    <div class="card-footer text-center small">
+                        <div class="text-truncate mb-2" title="<?= htmlspecialchars($filename) ?>"><?= htmlspecialchars($filename) ?></div>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a class="btn btn-sm btn-outline-primary" href="<?= htmlspecialchars($videoUrl) ?>" download="<?= htmlspecialchars($filename) ?>">Download</a>
+                            <form method="post" class="m-0 delete-form">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="filename" value="<?= htmlspecialchars($filename) ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Löschen</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         <?php } ?>
@@ -96,6 +139,11 @@ $(document).ready(function () {
         const modalVideo = $("#modalVideo")[0];
         modalVideo.pause();
         modalVideo.currentTime = 0;
+    });
+
+    $(".delete-form").on("submit", function () {
+        const filename = $(this).find("input[name='filename']").val();
+        return confirm(`Datei wirklich löschen?\n\n${filename}`);
     });
 });
 </script>
